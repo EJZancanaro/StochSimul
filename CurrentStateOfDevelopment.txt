@@ -1,2 +1,6 @@
-Currently it is yet to be decided whether we use a Python only approach
-or if we use the previously developped but unsafe C code
+
+During developments older than the current project, it has been tried to migrate all code from python to C.
+This was mostly successful, but the code contains memory leaks. We therefore continue this follow up project purely in Python.
+
+7/07/2025
+Basic processes and functions were migrated to the current project.
