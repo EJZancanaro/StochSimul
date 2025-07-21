@@ -4,3 +4,12 @@ This was mostly successful, but the code contains memory leaks. We therefore con
 
 7/07/2025
 Basic processes and functions were migrated to the current project.
+
+8/07/2025
+
+Reading of "Interacting Hawkes processes with multiplicative inhibition" Céline Duval , Eric Luçon and Christophe Pouzat
+They have their own project for hawkes_hawkes simulation https://plmlab.math.cnrs.fr/xtof/hawkes-x-hawkes/-/blob/master/code/hawkes_x_hawkes_simulation.pdf?ref_type=heads
+
+Started Malliavin Calculus.
+
+Tomorrow, look at Lectures on Poisson Processes

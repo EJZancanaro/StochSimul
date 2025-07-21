@@ -1,6 +1,7 @@
 import basicfunctions
 import matplotlib.pyplot as plt
 import numpy as np
+import specialplottings
 
 def homogenous_poisson(intensity,T):
     """Simulates a homogenous Poisson Process starting at 0 and ending at time T
@@ -63,20 +64,21 @@ def inhomogeneous_poisson(intensity, T, _explanatoryplot=False):
         return t_array[:-1]
 
 
-def Hawks_expdecay_intensity(s, mu, alpha, beta, set_instants):
+def Hawkes_expdecay_intensity(s, mu, alpha, beta, set_instants):
     """
     Describes the intensity of a given Hawkes Process with exponential decay
+
     :param s: point of evaluation
-    :param mu: increment of intensity value at each time of realisation
-    :param alpha: coefficient of the exponential decay
-    :param beta: coefficient of the exponent of the decay
+    :param mu: initial value and baseline of the intensity functions
+    :param alpha: increment of intensity value at each time of realisation
+    :param beta: coefficient of exponential of decay
     :param set_instants: instants of the process
     :return:
     """
     return mu + sum(alpha * np.exp(-beta * (s - np.array(set_instants))))
 
 
-def OgataThining(mu, alpha, beta, T):
+def HawkesOgataThining(mu, alpha, beta, T,_explanatoryplot=False):
     ###TODO :For now only able to handle the exponential decay Hawkes intensity, fix that
     """
     This uses Ogata thinning alogorithm to obtain the instants of a realisation of a Hawkes process
@@ -86,23 +88,30 @@ def OgataThining(mu, alpha, beta, T):
     :param T:
     :return:
     """
+
     set_instants = []
     s = 0
     t_array = []
 
     while s < T:
-        l_bar = Hawks_expdecay_intensity(s, mu, alpha, beta, set_instants)
+        l_bar = Hawkes_expdecay_intensity(s, mu, alpha, beta, set_instants)
         u = np.random.rand()
         w = -np.log(u) / l_bar
         s = s + w
 
         D = np.random.rand()
 
-        if D * l_bar <= Hawks_expdecay_intensity(s, mu, alpha, beta, set_instants):
+        if D * l_bar <= Hawkes_expdecay_intensity(s, mu, alpha, beta, set_instants):
             t_array.append(s)
             set_instants.append(t_array[-1])
 
     if t_array[-1] <= T:
+
         return t_array
     else:
+        if _explanatoryplot:
+            #TODO again, the following only works for exponential decay Hawkes processes
+            specialplottings.plot_Hawkes_expdecay(t_array[:-1], T, mu, alpha, beta, set_instants[:-1])
+            # Ils ne sont pas tout à fait égaux pour des betas trop grand : instabilité ?
+
         return t_array[:-1]
