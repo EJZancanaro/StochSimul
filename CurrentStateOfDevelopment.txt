@@ -16,4 +16,5 @@ Tomorrow, look at Lectures on Poisson Processes
 
 22/07:
 
-Development of mutiple tests and basic functions. Tests on the correctness of the simulation of the Hawkes process still need to be corrected as they do not work in their current state
+Development of multiple tests and basic functions. Tests on the correctness of the simulation of the Hawkes process still need to be corrected as they do not work in their current state.
+Development of the semi-linear process still must be corrected too

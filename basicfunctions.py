@@ -1,5 +1,6 @@
 import numpy as np
 import scipy as sp
+from scipy.signal import fftconvolve
 def supremum(f,a,b, precision=10.**(-5)) : #Trouve approx le sup d'une fonction f sur [a,b]
     """Returns an approximation of the supremum of a function on an interval
     params:
@@ -29,51 +30,56 @@ def sinusoidal_kernel(x,alpha,beta) :
     )
 
 
-def n_convolution(phi, n, start_interval, end_interval, resolution=1e-3):
+def n_convolution(phi, n, x_axis):
     """
-    Compute the n-fold convolution of function phi with itself over [start_interval, end_interval].
+    Compute for all i up to n all the the n-fold convolutions of function phi with itself over [start_interval, end_interval]
+    Stores it in an array, and returns both the array and the interval of evaluation
 
     :param phi: function to be convolved with itself
     :param n: number of convolutions
-    :param start_interval: start of the time interval
-    :param end_interval: end of the time interval
-    :param resolution: step size for discretization (default: 1e-4)
-    :return: dictionary with 'convolution_table' and 'x_axis'
+    :x_axis : array of values over which to evaluate the functions
+    :return: array of the convolutions up to n
     """
     assert n > 0
 
-    dt = resolution
-    x_axis = np.arange(start_interval, end_interval + dt, dt)
+
+    start_interval = x_axis[0]
+    grid_size = len(x_axis)
+    end_interval = x_axis[-1]
+
+    step = x_axis[1]-x_axis[0]
+
+    array_of_convolutions = np.zeros((n, grid_size))
+
     phi_vals = phi(x_axis)
-
     current_conv = phi_vals.copy()
-    for _ in range(1, n):
-        current_conv = np.convolve(current_conv, phi_vals) * dt
+    array_of_convolutions[0] = current_conv
+    for i in range(1, n):
+        current_conv = step * fftconvolve(current_conv, phi_vals)[:grid_size] #We are not interested in values larger
+        array_of_convolutions[i][:] = np.copy(current_conv)                      #than end_interval
 
-    conv_x_axis = np.arange(0, dt * len(current_conv), dt)
+        #the multiplication by the step is because the scipy function only computes the sum of the products.
+        #which needs to me multiplied by the step to become a riemann approximation of the integral
 
-    return {
-        "convolution_table": current_conv,
-        "x_axis": conv_x_axis
-    }
+    return array_of_convolutions
 
-def n_convolution_t(t, conv_array):
+
+def n_convolution_t(t, n, array_of_convolutions,x_axis):
     """
     Evaluate the n-fold convolution at a given time t using linear interpolation.
 
     :param t: time at which to evaluate the convolution
-    :param conv_array: output dictionary from n_convolution
+    :param conv_array: output from n_convolution
     :return: interpolated convolution value at time t
     """
-    conv = conv_array["convolution_table"]
-    x_axis = conv_array["x_axis"]
+    evaluation_array = array_of_convolutions[n-1][:]
 
     if t <= x_axis[0]:
-        return conv[0]
+        return evaluation_array[0]
     elif t >= x_axis[-1]:
-        return conv[-1]
+        return evaluation_array[-1]
     else:
-        return np.interp(t, x_axis, conv)
+        return np.interp(t, x_axis, evaluation_array)
 
 if __name__=="__main__":
     alpha= 1

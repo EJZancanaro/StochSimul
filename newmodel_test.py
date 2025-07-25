@@ -50,28 +50,32 @@ def test_linear_hawkes_2D():
                                                       poisson_measure=poisson_dict)
 def test_linear_Hawkes_is_correct():
     T = 10
-    M = 100
+    M = 1000
     mu = 5
     poisson_dict = generate_Poisson_2D_finitearea(T=T, M=M)
-    func = lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=2)
+    func = lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=6)
     Hawkes_events = new_model.simulate_hawkes_linear_finite2D(mu=mu,
                                               phi=func,
                                               poisson_measure=poisson_dict)
 
-    resolution = 10 ** 3
+    resolution = 10 ** 4
     x_axis = np.linspace(0,T, T*resolution )
 
     simulated_intensity = new_model.hawkes_intensity(t=T, history =Hawkes_events, mu=mu, phi=func)
 
-    psi = np.array([
-        (n_convolution(phi=func, n=n, start_interval=0, end_interval=T, resolution=resolution   ))["convolution_table"]
-            for n in range(1,10**3) #10**3 is a big number, because the theortical result would need to use infinity
-        ]).sum()
+    n_max=1000
+    convs = n_convolution(phi=func, n=n_max, x_axis=x_axis)  # shape: (n, len(x_axis))
+    psi = convs.sum(axis=0)  # shape: (len(x_axis),)
+    #print(psi.size==len(x_axis)) returns true, as desired
 
-    psi = np.zeros(T*resolution)
-    for n in range(1,10**3):
-        psi+= (n_convolution(phi=func, n=n, start_interval=0, end_interval=T, resolution=resolution))["convolution_table"]
-
-    real_intensity = mu*(1+sp.integrate.trapezoid(psi, np.linspace(0,T,resolution)))
+    real_intensity = mu*(1+sp.integrate.trapezoid(y=psi, x=x_axis))
 
     assert np.abs(real_intensity - simulated_intensity) < 10.**(-1)*real_intensity
+
+def test_semilear_Hawkes():
+    new_model.simulate_hawkes_semilinear_finite2D(muB=3,phiB=lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=3),
+                                                  muA=4,
+                                                  eventsA=new_model.simulate_hawkes_linear_finite2D(mu=4,phi=lambda x: basicfunctions.exponential_kernel(x, alpha=3, beta=6),
+                                                                                                    poisson_measure=new_model.generate_Poisson_2D_finitearea(T=5,M=20)),
+
+                                                  )
