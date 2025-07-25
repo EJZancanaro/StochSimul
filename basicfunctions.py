@@ -13,9 +13,13 @@ def supremum(f,a,b, precision=10.**(-5)) : #Trouve approx le sup d'une fonction 
     return max(f(X))
 
 def exponential_kernel(x,alpha,beta) :
+    assert np.all(x >= 0)
+    assert alpha>0
+    assert beta>0
     return alpha*np.exp(-beta*x)
 
 def cosinusoidal_kernel(x,alpha,beta) :
+
     return np.where(
         (beta * x >= 0) & (beta * x < np.pi / 2),
         alpha * np.cos(beta * x),
@@ -23,6 +27,7 @@ def cosinusoidal_kernel(x,alpha,beta) :
     )
 
 def sinusoidal_kernel(x,alpha,beta) :
+
     return np.where(
         (beta * x >= 0) & (beta * x < np.pi),
         alpha * np.sin(beta * x),

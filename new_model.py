@@ -8,7 +8,7 @@ def generate_Poisson_2D_finitearea(T, M):
 
     number_poisson_results = np.random.poisson(T * M)
 
-    array_poisson_realisations = np.random.rand(number_poisson_results)
+    array_poisson_realisations = T * np.random.rand(number_poisson_results)
     array_poisson_realisations = np.sort(array_poisson_realisations)
 
     array_theta = M * np.random.rand(number_poisson_results)
@@ -22,10 +22,13 @@ def generate_Poisson_2D_finitearea(T, M):
 
 def hawkes_intensity(t, history, mu, phi):
     """Compute intensity at time t given history and kernel phi."""
-    if len(history) == 0:
+
+    if history.size == 0:
         return mu
-    deltas = t - history[history < t]
-    return mu + np.sum(phi(deltas))
+    else:
+        deltas = t - history[history < t]
+
+        return mu + np.sum(phi(deltas))
 
 def simulate_hawkes_linear_finite2D(mu, phi, poisson_measure):
     """
@@ -41,8 +44,9 @@ def simulate_hawkes_linear_finite2D(mu, phi, poisson_measure):
     hawkes_event = []
 
     for t, h in zip(times, thetas):
+
         lambda_t = hawkes_intensity(t, np.array(hawkes_event), mu, phi)
-        if h < lambda_t:
+        if h <= lambda_t:
             hawkes_event.append(t)
 
     return np.array(hawkes_event)

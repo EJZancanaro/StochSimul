@@ -18,3 +18,8 @@ Tomorrow, look at Lectures on Poisson Processes
 
 Development of multiple tests and basic functions. Tests on the correctness of the simulation of the Hawkes process still need to be corrected as they do not work in their current state.
 Development of the semi-linear process still must be corrected too
+
+25/07:
+
+Convolutions now work. All tests now work. Poisson test improved so that the expectancy of the number of points being correct isn't sufficient.
+Tests could be made better maybe if correctness was tested with student tests.
