@@ -46,6 +46,25 @@ def test_poisson_is_correct():
     assert kstest(poisson2["theta"] / M2, 'uniform').pvalue > 0.01
     assert kstest(poisson3["theta"] / M3, 'uniform').pvalue > 0.01
 
+def test_hawkes_intensity_both_methods():
+    T = 10
+    time_scale_array = np.linspace(0,T,T*10**3)
+    slow_result = np.zeros_like(time_scale_array)
+    mu = 5
+    phi = lambda x : basicfunctions.exponential_kernel(x,alpha=3,beta=4)
+    history = np.array([1,3,3.5,8])
+
+    fast_result = new_model.hawkes_intensity_array(time_scale_array=time_scale_array,mu=mu,phi=phi,history=history)
+
+    for (i,t) in enumerate(time_scale_array):
+        slow_result[i] = new_model.hawkes_intensity(t=t,history=history,mu=mu,phi=phi)
+
+    assert np.array_equal(slow_result, fast_result) #checks if both are close enough #
+    # (floating point error doesn't always allow us to use np.array_equal
+    # so if an error appears, try using np.allclose
+    # This should not happen though, as the transformations applied are exactly line-by-line the same
+    # so the numerical approximations experienced should be exactly the same)
+
 
 def test_hawkes_intensity():
     new_model.hawkes_intensity(t=5, history=np.array([]),mu=3,phi=lambda x: basicfunctions.exponential_kernel(x, alpha=1,beta=2))

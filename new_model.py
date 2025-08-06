@@ -30,6 +30,14 @@ def hawkes_intensity(t, history, mu, phi):
 
         return mu + np.sum(phi(deltas))
 
+def hawkes_intensity_array(time_scale_array,history,mu,phi):
+    if history.size == 0:
+        return mu*np.ones_like(time_scale_array)
+    else:
+        function = lambda t : mu+np.sum(phi(t-history[history<t]))
+        return np.array(list(map(function,time_scale_array))) #quirk of the map function, we have to convert its return
+                                                            #to a list before converting it to a numpy array
+
 def simulate_hawkes_linear_finite2D(mu, phi, poisson_measure):
     """
     Simulate a linear Hawkes process by thinning of a poisson measure restricted to a rectangle of R2.
@@ -63,4 +71,3 @@ def simulate_hawkes_semilinear_finite2D(muB, phiB, muA,eventsA ,poisson_measure)
             eventsB.append(t)
 
     return np.array(eventsB)
-
