@@ -60,14 +60,16 @@ def simulate_hawkes_linear_finite2D(mu, phi, poisson_measure):
     return np.array(hawkes_event)
 
 
-def simulate_hawkes_semilinear_finite2D(muB, phiB, muA,eventsA ,poisson_measure):
+def simulate_hawkes_semilinear_finite2D(muB, phiB, muA, phiA ,eventsA ,poisson_measure):
     times, thetas = poisson_measure["time"], poisson_measure["theta"]
     eventsB = []
-
+    integral = 0
     for t, h in zip(times, thetas):
         lambdaB_t = hawkes_intensity(t, np.array(eventsB), muB, phiB)
-        lambdaA_t = hawkes_intensity(t, np.array(eventsA), muA, phiB)
+        lambdaA_t = hawkes_intensity(t, np.array(eventsA), muA, phiA) #TODO check if this isn't phiA ?
         if h < max(0,lambdaB_t-lambdaA_t):
             eventsB.append(t)
 
     return np.array(eventsB)
+
+

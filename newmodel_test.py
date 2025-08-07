@@ -136,10 +136,60 @@ def test_semilinear_Hawkes():
     poisson_measure_A = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
     poisson_measure_B = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
 
-    new_model.simulate_hawkes_semilinear_finite2D(muB=muB,phiB=lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=3),
-                                                  muA=4,
+    phiA = lambda x: basicfunctions.exponential_kernel(x, alpha=3, beta=6)
+    new_model.simulate_hawkes_semilinear_finite2D(muB=muB,phiB=lambda x: basicfunctions.exponential_kernel(x, alpha=5, beta=8),
+                                                  muA=4, phiA = phiA,
                                                   eventsA=new_model.simulate_hawkes_linear_finite2D(mu=muA,
-                                                                                                    phi=lambda x: basicfunctions.exponential_kernel(x, alpha=3, beta=6),
+                                                                                                    phi=phiA,
                                                                                                     poisson_measure=poisson_measure_A),
                                                   poisson_measure=poisson_measure_B
                                                   )
+
+def test_semilinear_Hawkes_is_correct_when_intensity_of_A_is_constant():
+    #Let us note that given that we suppose that A has constant intensity, it is not necessary to generate the poisson measure
+    #results for A, as even if the events of A are empty, the intensity of B would not change
+
+    T = 7
+    M = 500
+    muA = 4
+    muB= 7
+    phiA = lambda x:0
+    phiB = lambda x:basicfunctions.exponential_kernel(x, alpha=1, beta=6)
+
+    resolution = 10 ** 3
+    x_axis = np.linspace(0, T, T * resolution)
+
+    empirical_average = 0
+    number_iteration = 10 ** 3
+    for _ in range(number_iteration):
+        poisson_A = generate_Poisson_2D_finitearea(T=T, M=M)
+        poisson_B = generate_Poisson_2D_finitearea(T=T, M=M)
+
+        eventsB = new_model.simulate_hawkes_semilinear_finite2D(
+            muB=muB, phiB=phiB,
+            muA=muA, phiA=phiA, eventsA=new_model.simulate_hawkes_linear_finite2D(mu=muA,phi=phiA,poisson_measure=poisson_A),
+            poisson_measure=poisson_B
+            )
+
+        # print(eventsB)
+        # print(eventsB.size)
+        # print("ATTENTION")
+        simulated_intensity = new_model.hawkes_intensity(t=T, history=eventsB, mu=muB, phi=phiB)
+        print(simulated_intensity)
+        # print("End of ATTENTION")
+
+        empirical_average += simulated_intensity
+
+    empirical_average /= number_iteration
+
+    max_convolution_n = 100
+    convs = n_convolution(phi=phiB, n=max_convolution_n, x_axis=x_axis)  # shape: (n, len(x_axis))
+    psi = convs.sum(axis=0)  # shape: (len(x_axis),)
+    # print(psi.size==len(x_axis)) returns true, as desired
+
+    real_expected_intensity = muB + max(0,muB-muA) * ( sp.integrate.trapezoid(y=psi, x=x_axis))
+    #See the upcoming article
+
+    assert np.abs(real_expected_intensity - empirical_average) < 1 / np.sqrt(number_iteration) * real_expected_intensity
+
+
