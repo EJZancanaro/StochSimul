@@ -15,14 +15,18 @@ def generate_Poisson_2D_finitearea(T, M):
 
     return_dict = {
         "time" : array_poisson_realisations,
-        "theta": array_theta
+        "theta": array_theta,
+        "T":T,
+        "M":M
     }
     return return_dict
 
 
 def hawkes_intensity(t, history, mu, phi):
     """Compute intensity at time t given history and kernel phi."""
-
+    #Attention. If a function calls this function inside a loop where history
+    #is filled progressively, then that loop will run on O(len(final_history)**2) instead of
+    #O(len(final_history). This should be adressed in a following update
     if history.size == 0:
         return mu
     else:
@@ -63,10 +67,10 @@ def simulate_hawkes_linear_finite2D(mu, phi, poisson_measure):
 def simulate_hawkes_semilinear_finite2D(muB, phiB, muA, phiA ,eventsA ,poisson_measure):
     times, thetas = poisson_measure["time"], poisson_measure["theta"]
     eventsB = []
-    integral = 0
+
     for t, h in zip(times, thetas):
         lambdaB_t = hawkes_intensity(t, np.array(eventsB), muB, phiB)
-        lambdaA_t = hawkes_intensity(t, np.array(eventsA), muA, phiA) #TODO check if this isn't phiA ?
+        lambdaA_t = hawkes_intensity(t, np.array(eventsA), muA, phiA)
         if h < max(0,lambdaB_t-lambdaA_t):
             eventsB.append(t)
 

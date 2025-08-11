@@ -64,10 +64,10 @@ if __name__ == "__main__":
     T = 30
     M = 1000
 
-    muA = 1.5
+    muA = 2
     muB = 4
-    phiA = lambda x: basicfunctions.exponential_kernel(x,alpha=10,beta=10.12)
-    phiB = lambda x: basicfunctions.exponential_kernel(x,alpha=4,beta=4.5)
+    phiA = lambda x: basicfunctions.exponential_kernel(x,alpha=3.5,beta=4)
+    phiB = lambda x: basicfunctions.exponential_kernel(x,alpha=4,beta=3.8)
 
     poisson_measure_A = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
     poisson_measure_B = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
