@@ -3,14 +3,12 @@ import basicfunctions
 import numpy as np
 import matplotlib.pyplot as plt
 
-from projet_stage.StochSimul.new_model import generate_Poisson_2D_finitearea, hawkes_intensity
-
+import new_model
 NUMBER_OF_POINTS_PER_UNIT_OF_TIME = 10**3
 
 #TODO Becareful, during development we switched between dictionary representation of a poisson measure
 # and a class representation. This creates inconsistencies that are prone to bugs.
 #Consensus : ALL will be dictionnaries
-
 
 
 def order_poisson_measure(list_poisson_measure_dicts):
@@ -102,7 +100,7 @@ def order_poisson_measure(list_poisson_measure_dicts):
 class NeuronLinear():
     number_instances_linear = 0
     list_linear_neurons = []
-    def __init__(self, initial_intensity , kernel_function, poisson_measure,T,M):
+    def __init__(self, initial_intensity , kernel_function, poisson_measure):
         self.id = NeuronLinear.number_instances_linear
         NeuronLinear.number_instances_linear+=1
         NeuronLinear.list_linear_neurons.append(self)
@@ -110,16 +108,24 @@ class NeuronLinear():
         self.initial_intensity = initial_intensity
         self.kernel_function = kernel_function
         self.poisson_measure = poisson_measure
-        self.T = T
-        self.M = M
+        self.T = poisson_measure["T"]
+        self.M = poisson_measure["M"]
 
         self.history = self.events()
 
     def events(self):
-
+        """
+        Returns the events of the neuron
+        :return: list of events
+        """
         return new_model.simulate_hawkes_linear_finite2D(mu=self.initial_intensity, phi=self.kernel_function,
                                                          poisson_measure=self.poisson_measure)
     def intensity_values(self):
+        """
+        Computes the intensity over time of the neuron.
+        :return: Array representing the values of the intensity as time progresses up to self.T
+        """
+
         time_scale = np.linspace(0, self.T, T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
 
         intensity_values = new_model.hawkes_intensity_array(time_scale_array=time_scale,
@@ -128,42 +134,63 @@ class NeuronLinear():
         return intensity_values, time_scale
 
     def intensity_plot(self, string):
+        """
+        Plots the intensity of a given neuron
+        :param string: String that will appear in the legend of the plot
+        """
         intensity_values, time_scale = self.intensity_values()
         plt.plot(time_scale, intensity_values, label=string)
 
+    @staticmethod
+    def array_mean_of_intensities():
+        """
+        Computes the array containing for all times the mean of the intensities of all linear neurons
+
+        :return: array of the means of intensities of linear neurons over time
+        """
+
+        sum_intensities = 0
+
+        assert len(NeuronLinear.list_linear_neurons) != 0
+        for linear_neuron in NeuronLinear.list_linear_neurons:
+            intensities, time_scale = linear_neuron.intensity_values()
+            # remark. It is imperative all time_scale variables throughout the loop are identical.
+            sum_intensities += intensities
+
+        return 1 / NeuronLinear.number_instances_linear * sum_intensities , time_scale
+    @staticmethod
+    def plot_means():
+        """
+        Plots the mean intensity of all linear neurons
+        """
+        means, time_scale = NeuronLinear.array_mean_of_intensities()
+        plt.plot( time_scale, means, label="Intensity of the mean of all linear neurons")
 
 class NeuronSemilinear() :
+
     number_instances_semilinear = 0
     list_semilinear_neurons = []
 
     simulation_was_ran = False
 
-    def __init__(self,initial_intensity,list_parent_kernels,T,M,poisson_measure):
+    def __init__(self,initial_intensity,list_parent_kernels,poisson_measure):
+        # It is imperative all linear Neurons are defined before any semilinear neurons
+
         assert NeuronLinear.list_linear_neurons != []
-        #It is imperative all linear Neurons are defined before any semilinear neurons
 
         self.id = NeuronSemilinear.number_instances_semilinear #integer that identifies the neuron
         NeuronSemilinear.number_instances_semilinear+=1
         NeuronSemilinear.list_semilinear_neurons.append(self)
 
         self.initial_intensity = initial_intensity
-        self.T = T
-        self.M = M
+        self.T = poisson_measure["T"]
+        self.M = poisson_measure["M"]
 
         self.poisson_measure = poisson_measure
 
         self.history = []
         self.array_parent_kernels = list_parent_kernels #list indexed by j of the kernels phi^{j->i}, where i is self.id
         #We must not generate the events before creating all semilinear neurons
-
-    def inform(self,array_influence_functions,array_inhibiting, array_exciting, array_poisson_measure_exciting):
-        #Fills in the previously unfilled attributes of the object
-
-        self.array_influence_functions = np.copy(array_influence_functions)
-        self.array_exciting = np.copy(array_exciting)
-        self.array_inhibiting = np.copy(array_inhibiting)
-        self.array_poisson_measure_exciting = np.copy(array_poisson_measure_exciting)
-
 
     @staticmethod
     def events(): # this might actually be way more efficient as a static method because when computing ones events
@@ -175,21 +202,9 @@ class NeuronSemilinear() :
 
         assert not NeuronSemilinear.simulation_was_ran
 
-        sum_intensities = 0
-        ##############Computing the mean of the LINEAR intensities
-        assert len(NeuronLinear.list_linear_neurons)!=0
-        for linear_neuron in NeuronLinear.list_linear_neurons:
+        mean_of_linear_intensities, time_scale = NeuronLinear.array_mean_of_intensities()
 
-            intensities, time_scale = linear_neuron.intensity_values()
-            #remark. It is imperative all time_scale variables throughout the loop are identical.
-            sum_intensities += intensities
-        print("Sum_intensities ", sum_intensities)
-        mean_of_linear_intensities = 1/NeuronLinear.number_instances_linear * sum_intensities
-        #####################
-        ############# Getting for every semilinear neuron their events
 
-        #all_poisson_measuresB = Poisson_measure.order_all()
-                      #TODO HERE IS THE ERROR, this takes ALL PM, we only want the ones generating Semilinear
 
         all_poisson_measuresB = order_poisson_measure(
             [neuron.poisson_measure for neuron in NeuronSemilinear.list_semilinear_neurons]
@@ -229,8 +244,6 @@ class NeuronSemilinear() :
             array_current_intensities[neuron_index] += current_neuron.initial_intensity
 
             current_mean_linears = np.interp(t, time_scale, mean_of_linear_intensities)
-            print("Theta: ",theta)
-            print("upper bound ",max(0, array_current_intensities[neuron_index] - current_mean_linears))
             if theta<max(0, array_current_intensities[neuron_index] - current_mean_linears ) :
                 current_neuron.history.append(t)
         NeuronSemilinear.history_to_array()
@@ -238,26 +251,18 @@ class NeuronSemilinear() :
 
     @staticmethod
     def history_to_array():
+        """
+        Turns the history of each neuron, who are lists during their construction, into arrays
+        """
         for neuron in NeuronSemilinear.list_semilinear_neurons :
             neuron.history = np.array(neuron.history)
 
     def intensity_values(self):
-        #Same as the simple case, we suppose we know all events up to time t-, what is the intensity at time t?
         """
-        sum_of_integrals = 0
-
-        history=[]
-        for neuron in array_exciting:
-            integral = 0
-            if neuron.history.size==0:
-                integral += neuron.initial_intensity
-            else :
-                integral += neuron.initial_intensity + np.sum(neuron.kernel_function(neuron.history[neuron.history<t]) )
-
-            sum_of_integrals += integral
-
-        Nb_exciting_neurons = NeuronSemilinear.number_instances_semilinear
+        Computes the intensity over time of the neuron.
+        :return: Array representing the values of the intensity as time progresses up to self.T
         """
+
         T = self.T
         time_scale = np.linspace(0,T,T*NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
         intensity_array = np.zeros_like(time_scale)
@@ -279,70 +284,105 @@ class NeuronSemilinear() :
 
 
 
-        #assert False #TODO this implementation is false. The list of all kernel functions has to be a matrix.
-                     # The current state of the implementation considers that neurons interact with others
-                     # with a kernel that is Identical to the one he uses to interact with itself.
-                     # This is not true in the general case.
-
-                     #TODO How to solve it : instead of kernel_function as an attribute, every instance
-                     # must have as an attribute a  list of kernels, that MUST be the same size as
-                     # the list of all existing semilinear neurons.
-                     # to acces his own kernel, a neuron need only to acces that list at the index of his own id.
-
-        #TODO Take inspiration from the function events()
         return intensity_array , time_scale
 
     def intensity_plot(self,string):
+        """
+        Plots the intensity of a given neuron over time. Should be called after a figure has already been created.
+        :param string: String that will legend the ploting after calling plt.show()
+
+        """
         intensity_values, time_scale = self.intensity_values()
         plt.plot(time_scale,intensity_values,label=string)
+
+    def plot_poisson_events(self,string):
+        """
+        Plot on an already open figure the points of the poisson process that generate the interaction of the neuron with others.
+        This is done according to whether they ended up being selected or not.
+        """
+        assert NeuronSemilinear.simulation_was_ran
+        #otherwise, we can't chose which ones to plot
+
+        intensity, time_scale =  self.intensity_values()
+        #Index where maximum value of intensity is obtained, so we can ignore all thetas bigger than it
+        theta_max = max(intensity)
+
+        times = self.poisson_measure["time"]
+        thetas = self.poisson_measure["theta"]
+
+        mask_for_low_points = (thetas <= theta_max)
+
+        intensity_at_poisson_times = np.interp(times,time_scale,intensity)
+
+        mean_linear,time_scaleA = NeuronLinear.array_mean_of_intensities()
+        assert np.array_equal(time_scaleA, time_scale)
+        value_mean_at_poisson = np.interp(times,time_scaleA,mean_linear)
+
+        mask_for_accepted_points = (thetas <= np.maximum(0,intensity_at_poisson_times - value_mean_at_poisson) )
+        mask_for_rejected_points = (thetas > np.maximum(0,intensity_at_poisson_times - value_mean_at_poisson) )
+
+        plt.plot(times[mask_for_low_points & mask_for_accepted_points],
+                 thetas[mask_for_low_points & mask_for_accepted_points],
+                 '+',
+                 color='green',
+                 label=string + ' (accepted) ')
+        plt.plot(times[mask_for_low_points & mask_for_rejected_points],
+                 thetas[mask_for_low_points & mask_for_rejected_points],
+                 '+',
+                 color='red',
+                 label=string + ' (rejected) ')
+        plt.plot(time_scale , np.maximum(0,intensity-mean_linear) ,
+                  label=" Acceptation zone ")
+
 
 
 if __name__ == "__main__":
     T = 5
     M = 1000
-    poisson_measureA1 = generate_Poisson_2D_finitearea(T=T,M=M)
-    poisson_measureA2 = generate_Poisson_2D_finitearea(T=T,M=M)
-    poisson_measureA3 = generate_Poisson_2D_finitearea(T=T,M=M)
-    poisson_measureB1 = generate_Poisson_2D_finitearea(T=T,M=M)
-    poisson_measureB2 = generate_Poisson_2D_finitearea(T=T,M=M)
+    poisson_measureA1 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
+    poisson_measureA2 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
+    poisson_measureA3 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
+    poisson_measureB1 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
+    poisson_measureB2 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
 
-    muA1, muA2, muA3, muB1,muB2 = 1,2,3,13,25
+    muA1, muA2, muA3, muB1,muB2 = 1,2,3,6,7
 
-    phiA1 = lambda x: basicfunctions.exponential_kernel(x,alpha=4,beta=6)
-    phiA2 = lambda x: basicfunctions.exponential_kernel(x,alpha=3.5, beta=4)
-    phiA3 = lambda x: basicfunctions.exponential_kernel(x,alpha=3.9, beta=4)
+    phiA1 = lambda x: basicfunctions.exponential_kernel(x,alpha=1,beta=5)
+    phiA2 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=4)
+    phiA3 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=3)
 
-    phiB2 = lambda x: basicfunctions.exponential_kernel(x, alpha=8.5, beta=9)
     phiB11 = lambda x: 0
-    phiB21 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=3)
-    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=3)
+    phiB21 = lambda x: basicfunctions.exponential_kernel(x, alpha=5, beta=6)
+    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=5, beta=7)
     phiB22 = lambda x: 0
 
-    A1 = NeuronLinear(initial_intensity=muA1, kernel_function=phiA1, poisson_measure=poisson_measureA1,T=T,M=M)
-    A2 = NeuronLinear(initial_intensity=muA2, kernel_function=phiA2, poisson_measure=poisson_measureA2, T=T, M=M)
-    A3 = NeuronLinear(initial_intensity=muA3, kernel_function=phiA3, poisson_measure=poisson_measureA3, T=T, M=M)
+    A1 = NeuronLinear(initial_intensity=muA1, kernel_function=phiA1, poisson_measure=poisson_measureA1)
+    A2 = NeuronLinear(initial_intensity=muA2, kernel_function=phiA2, poisson_measure=poisson_measureA2)
+    A3 = NeuronLinear(initial_intensity=muA3, kernel_function=phiA3, poisson_measure=poisson_measureA3)
 
     parent_kernels_B1 = [phiB11,phiB21]
     parent_kernels_B2 = [phiB12,phiB22]
 
-    B1 = NeuronSemilinear(initial_intensity=muB1, list_parent_kernels=[phiB11,phiB21], poisson_measure=poisson_measureB1,T=T,M=M)
-    B2 = NeuronSemilinear(initial_intensity=muB2, list_parent_kernels=[phiB12,phiB22], poisson_measure=poisson_measureB2,T=T,M=M)
+    B1 = NeuronSemilinear(initial_intensity=muB1, list_parent_kernels=[phiB11,phiB21], poisson_measure=poisson_measureB1)
+    B2 = NeuronSemilinear(initial_intensity=muB2, list_parent_kernels=[phiB12,phiB22], poisson_measure=poisson_measureB2)
 
     NeuronSemilinear.events()
 
     plt.figure()
-    print(A1.history)
-    print(A2.history)
-    print(A3.history)
-    print(B1.history)
-    print(B2.history)
-    A1.intensity_plot(string="Intensity of A1")
-    A2.intensity_plot(string="Intensity of A2")
-    A3.intensity_plot(string="Intensity of A3")
 
-    B1.intensity_plot(string="Intensity of B1")
+    #A1.intensity_plot(string="Intensity of A1")
+    #A2.intensity_plot(string="Intensity of A2")
+    #A3.intensity_plot(string="Intensity of A3")
+
+    #B1.intensity_plot(string="Intensity of B1")
     B2.intensity_plot(string="Intensity of B2")
+
+
+    NeuronLinear.plot_means()
+
+    B1.plot_poisson_events("Poisson events of B1")
     plt.legend()
+    plt.tight_layout()
     plt.show()
 
 
