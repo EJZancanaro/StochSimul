@@ -1,4 +1,5 @@
 import types
+from types import FunctionType
 
 import numpy as np
 import new_model
@@ -25,11 +26,14 @@ def hawkes_intensity_fast(t, history,mu,phi,previous_value_intensity=None,previo
     if is_exponential_decay:
         if previous_value_intensity is None:
             # No information about previous intensities, compute normally
-            return new_model.hawkes_intensity(t,history,mu,phi)
+            return new_model.hawkes_intensity(t,np.array(history),mu,phi)
         else:
             #assert previous_time is not None
 
+            #too slow
+            history = np.array(history)
             intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*sum(np.exp(-beta*(t-history[(history<t) & (history>previous_time) ])))
+            #intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*np.exp(-beta*(t-previous_time))
             return intensity
 
     else:
@@ -38,6 +42,7 @@ def hawkes_intensity_fast(t, history,mu,phi,previous_value_intensity=None,previo
         return new_model.hawkes_intensity(t,history,mu,phi)
 
 def hawkes_intensity_fast_array(time_scale_array, history,mu, phi,is_exponential_decay=False):
+
     intensity_array = np.zeros_like(time_scale_array)
     previous_value_intensity = None
     previous_time=None
@@ -52,7 +57,8 @@ def hawkes_intensity_fast_array(time_scale_array, history,mu, phi,is_exponential
             previous_time = t
         return intensity_array
 
-def simulate_Hawkes_linear_finite2D_fast(mu, phi , poisson_measure,is_exponential_decay=False):
+def simulate_hawkes_linear_finite2D_fast(mu, phi , poisson_measure,is_exponential_decay=False):
+
     if not is_exponential_decay :
         return new_model.simulate_hawkes_linear_finite2D(mu,phi,poisson_measure)
 
@@ -78,3 +84,34 @@ def simulate_Hawkes_linear_finite2D_fast(mu, phi , poisson_measure,is_exponentia
 
 
     return np.array(hawkes_event)
+
+def simulate_hawkes_semilinear_finite2D_fast(muB, phiB, muA, phiA ,eventsA ,poisson_measure,is_exponential_decay):
+    if not is_exponential_decay :
+         return simulate_hawkes_semilinear_finite2D_fast(muB, phiB, muA, phiA, eventsA, poisson_measure)
+
+    times, thetas = poisson_measure["time"], poisson_measure["theta"]
+    eventsB = []
+
+    lambdaB_t_right = None
+    lambdaB_t_left = None
+    lambdaA = None
+
+    previous_t = None
+    for t, h in zip(times, thetas):
+        lambdaB_t_left = hawkes_intensity_fast(t, eventsB, muB, phiB,
+                                               previous_value_intensity= lambdaB_t_right,
+                                               previous_time = previous_t,
+                                               is_exponential_decay=is_exponential_decay)
+        lambdaA = hawkes_intensity_fast(t, eventsA, muA, phiA,
+                                               previous_value_intensity=lambdaA,
+                                               previous_time = previous_t,
+                                               is_exponential_decay=is_exponential_decay)
+        previous_t = t
+        if h < max(0,lambdaB_t_left-lambdaA):
+            eventsB.append(t)
+            lambdaB_t_right = lambdaB_t_left + phiB(0)
+        else:
+            lambdaB_t_right=lambdaB_t_left
+
+
+    return np.array(eventsB)

@@ -19,4 +19,12 @@ def test_n_convolution_is_correct():
         real_t = t*np.exp(t)
 
         assert np.abs(simulated_t - real_t)< 10.**(-2)*real_t #The relative error must be of at most one significant digit
-
+import time
+def test_is_exponential_decay():
+    assert not basicfunctions.is_exponential_decay(lambda x : basicfunctions.sinusoidal_kernel(x, alpha=3,beta = 2))
+    assert not basicfunctions.is_exponential_decay(lambda x : basicfunctions.cosinusoidal_kernel(x, alpha=3,beta = 2))
+    assert not basicfunctions.is_exponential_decay(lambda x: x-3)
+    assert not basicfunctions.is_exponential_decay(basicfunctions.exponential_kernel)
+    assert basicfunctions.is_exponential_decay(lambda x : basicfunctions.exponential_kernel(x, alpha=3, beta = 2))
+    assert basicfunctions.is_exponential_decay(lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=10000))
+    assert basicfunctions.is_exponential_decay(lambda x: basicfunctions.exponential_kernel(x, alpha=45, beta=2))

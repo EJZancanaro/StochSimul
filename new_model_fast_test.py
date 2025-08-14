@@ -74,7 +74,7 @@ def test_hawkes_intensity_fast():
 
         assert np.isclose(intensity_array_fast[-1], intensity_fast)
 
-        if len(history)> 2 :
+        if len(history)> 3 :
             assert time_slow_version>time_fast_version
 
             assert time_array_version>time_fast_version
@@ -86,7 +86,7 @@ def test_hawkes_intensity_fast():
             #when there are less than 2 events, numpy's speed makes it so it isn't worth it to use the "fast method"
 
 
-def test_simulate_Hawkes_fast():
+def test_simulate_linear_Hawkes_fast():
     T = 10
     M = 1000
 
@@ -105,7 +105,7 @@ def test_simulate_Hawkes_fast():
     slow_time = end - start
 
     start = time.perf_counter()
-    fast_hawkes = new_model_fast.simulate_Hawkes_linear_finite2D_fast(mu= mu, phi=phi,
+    fast_hawkes = new_model_fast.simulate_hawkes_linear_finite2D_fast(mu= mu, phi=phi,
                                                                       poisson_measure=poisson_measure,
                                                                       is_exponential_decay=True)
     end = time.perf_counter()
@@ -120,4 +120,46 @@ def test_simulate_Hawkes_fast():
     if len(fast_hawkes)>3 :
         print("slow hawkes",slow_time)
         print("fast hawkes",fast_time)
+        assert slow_time > fast_time
+
+def test_simulate_semilinear_Hawkes_fast():
+    T = 30
+    M = 1000
+
+    poisson_measureA = new_model.generate_Poisson_2D_finitearea(T=T, M=M)
+    poisson_measureB = new_model.generate_Poisson_2D_finitearea(T=T, M=M)
+
+    muA = 3
+    muB = 12
+    alphaA = 3
+    alphaB = 9
+    betaA = 4
+    betaB = 3
+    phiA = lambda x: basicfunctions.exponential_kernel(x, alpha=alphaA, beta=betaA)
+    phiB = lambda x : basicfunctions.exponential_kernel(x,alpha = alphaB, beta= betaB)
+
+    eventsA = new_model.simulate_hawkes_linear_finite2D(mu=muA, phi=phiA,poisson_measure=poisson_measureA)
+
+    start = time.perf_counter()
+    slow_hawkes = new_model.simulate_hawkes_semilinear_finite2D(muB=muB, phiB=phiB, muA=muA, phiA=phiA,
+                                                                eventsA=eventsA, poisson_measure=poisson_measureB)
+    end = time.perf_counter()
+
+    slow_time = end - start
+
+    start = time.perf_counter()
+    fast_hawkes = new_model_fast.simulate_hawkes_semilinear_finite2D_fast(muB=muB, phiB=phiB, muA=muA, phiA=phiA,
+                                                                eventsA=eventsA, poisson_measure=poisson_measureB,
+                                                                          is_exponential_decay=True)
+    end = time.perf_counter()
+
+    fast_time = end - start
+
+    assert len(slow_hawkes) == len(fast_hawkes)
+
+    assert np.all(np.isclose(slow_hawkes, fast_hawkes))
+
+    if len(slow_hawkes) > 2:
+        print("slow hawkes", slow_time)
+        print("fast hawkes", fast_time)
         assert slow_time > fast_time

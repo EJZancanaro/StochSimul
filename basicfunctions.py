@@ -1,6 +1,9 @@
 import numpy as np
 import scipy as sp
 from scipy.signal import fftconvolve
+import types
+import dis
+
 def supremum(f,a,b, precision=10.**(-5)) : #Trouve approx le sup d'une fonction f sur [a,b]
     """Returns an approximation of the supremum of a function on an interval
     params:
@@ -97,3 +100,25 @@ if __name__=="__main__":
     plt.plot(absc, sinusoidal_kernel(absc, alpha, beta))
 
     plt.show()
+
+def is_exponential_decay(func):
+    """
+    Verify if `func` is of the form:
+        lambda x: exponential_kernel(x, alpha=..., beta=...)
+    with arbitrary alpha and beta values.
+    """
+    # Must be a lambda function
+    if not isinstance(func, types.LambdaType) or func.__name__ != "<lambda>":
+        return False
+
+    # Disassemble the function bytecode
+    instructions = list(dis.get_instructions(func))
+
+    # Look for a call to "example" with keywords alpha and beta
+    seen_call = False
+
+    for instr in instructions:
+        if (instr.opname == "LOAD_GLOBAL" or instr.opname =="LOAD_ATTR") and instr.argval == "exponential_kernel":
+            seen_call = True
+
+    return seen_call

@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import new_model
+import new_model_fast
 NUMBER_OF_POINTS_PER_UNIT_OF_TIME = 10**3
 
 #TODO Becareful, during development we switched between dictionary representation of a poisson measure
@@ -107,7 +108,9 @@ class NeuronLinear():
 
         self.initial_intensity = initial_intensity
         self.kernel_function = kernel_function
+        self.is_exponential_decay = basicfunctions.is_exponential_decay(self.kernel_function)
         self.poisson_measure = poisson_measure
+
         self.T = poisson_measure["T"]
         self.M = poisson_measure["M"]
 
@@ -118,7 +121,7 @@ class NeuronLinear():
         Returns the events of the neuron
         :return: list of events
         """
-        return new_model.simulate_hawkes_linear_finite2D(mu=self.initial_intensity, phi=self.kernel_function,
+        return new_model_fast.simulate_hawkes_linear_finite2D_fast(mu=self.initial_intensity, phi=self.kernel_function,
                                                          poisson_measure=self.poisson_measure)
     def intensity_values(self):
         """
@@ -128,9 +131,10 @@ class NeuronLinear():
 
         time_scale = np.linspace(0, self.T, T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
 
-        intensity_values = new_model.hawkes_intensity_array(time_scale_array=time_scale,
+        intensity_values = new_model_fast.hawkes_intensity_fast_array(time_scale_array=time_scale,
                                                             history=self.history, mu=self.initial_intensity,
-                                                            phi=self.kernel_function)
+                                                            phi=self.kernel_function,
+                                                            is_exponential_decay=self.is_exponential_decay)
         return intensity_values, time_scale
 
     def intensity_plot(self, string):
@@ -189,7 +193,11 @@ class NeuronSemilinear() :
         self.poisson_measure = poisson_measure
 
         self.history = []
-        self.array_parent_kernels = list_parent_kernels #list indexed by j of the kernels phi^{j->i}, where i is self.id
+
+        self.array_parent_kernels = list_parent_kernels
+        self.are_exponential_decays = [basicfunctions.is_exponential_decay(function) for function in self.array_parent_kernels]
+
+        #list indexed by j of the kernels phi^{j->i}, where i is self.id
         #We must not generate the events before creating all semilinear neurons
 
     @staticmethod
@@ -248,6 +256,7 @@ class NeuronSemilinear() :
                 current_neuron.history.append(t)
         NeuronSemilinear.history_to_array()
         NeuronSemilinear.simulation_was_ran = True
+
 
     @staticmethod
     def history_to_array():
