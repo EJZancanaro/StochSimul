@@ -345,15 +345,15 @@ if __name__ == "__main__":
     poisson_measureB1 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
     poisson_measureB2 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
 
-    muA1, muA2, muA3, muB1,muB2 = 1,2,3,6,7
+    muA1, muA2, muA3, muB1,muB2 = 5,4,3,6,7
 
     phiA1 = lambda x: basicfunctions.exponential_kernel(x,alpha=1,beta=5)
     phiA2 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=4)
     phiA3 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=3)
 
     phiB11 = lambda x: 0
-    phiB21 = lambda x: basicfunctions.exponential_kernel(x, alpha=5, beta=6)
-    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=5, beta=7)
+    phiB21 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=3)
+    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=4)
     phiB22 = lambda x: 0
 
     A1 = NeuronLinear(initial_intensity=muA1, kernel_function=phiA1, poisson_measure=poisson_measureA1)
@@ -374,14 +374,14 @@ if __name__ == "__main__":
     #A2.intensity_plot(string="Intensity of A2")
     #A3.intensity_plot(string="Intensity of A3")
 
-    #B1.intensity_plot(string="Intensity of B1")
+    B1.intensity_plot(string="Intensity of B1")
     B2.intensity_plot(string="Intensity of B2")
 
 
     NeuronLinear.plot_means()
 
     B1.plot_poisson_events("Poisson events of B1")
-    plt.legend()
+    plt.legend(fontsize="xx-small")
     plt.tight_layout()
     plt.show()
 

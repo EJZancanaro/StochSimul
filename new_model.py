@@ -3,6 +3,12 @@ import numpy as np
 import basicfunctions
 
 def generate_Poisson_2D_finitearea(T, M):
+    """
+    Generates a poisson realisation in the 2D space [0,T] x [0,M]
+    :param T: Time bound
+    :param M: Intensity bound. Should approach infinity if we desire to simulate Hawkes processes with it.
+    :return: A dictionary containing all the parameters of the poisson simulation as well as the poisson realisation points' 2D coordinates
+    """
     assert T>0
     assert M>0
 
@@ -23,7 +29,13 @@ def generate_Poisson_2D_finitearea(T, M):
 
 
 def hawkes_intensity(t, history, mu, phi):
-    """Compute intensity at time t given history and kernel phi."""
+    """Compute intensity at time t given history and kernel phi.
+    t: time of evaluation
+    history : array of events of the process. Must be a numpy array
+    mu: initial intensity
+    phi: kernel of the increments of the process.
+    """
+
     #Attention. If a function calls this function inside a loop where history
     #is filled progressively, then that loop will run on O(len(final_history)**2) instead of
     #O(len(final_history). This should be adressed in a following update
@@ -34,7 +46,16 @@ def hawkes_intensity(t, history, mu, phi):
 
         return mu + np.sum(phi(deltas))
 
+
 def hawkes_intensity_array(time_scale_array,history,mu,phi):
+    """
+    Computes the hawkes intensity over a time interval
+    :param time_scale_array: time interval
+    :param history: all events up to the end of the interval of the process
+    :param mu: initial intensity of the hawkes process
+    :param phi: kernel function of the hawkes process
+    :return: array of the intensities throughout the timescale
+    """
     if history.size == 0:
         return mu*np.ones_like(time_scale_array)
     else:

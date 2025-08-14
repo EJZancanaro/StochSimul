@@ -46,7 +46,7 @@ def test_poisson_is_correct():
     assert kstest(poisson2["theta"] / M2, 'uniform').pvalue > 0.01
     assert kstest(poisson3["theta"] / M3, 'uniform').pvalue > 0.01
 
-def test_hawkes_intensity_both_methods():
+def test_hawkes_intensity_array_and_single_point():
     T = 10
     time_scale_array = np.linspace(0,T,T*10**3)
     slow_result = np.zeros_like(time_scale_array)
@@ -73,6 +73,7 @@ def test_hawkes_intensity():
     poisson_measure = new_model.generate_Poisson_2D_finitearea(T=5, M=20)
     new_model.simulate_hawkes_linear_finite2D(mu=3, phi=lambda x: basicfunctions.exponential_kernel(x, alpha=1, beta=2),
                                     poisson_measure=poisson_measure)
+
 
 def test_linear_hawkes_2D():
     tests_T = [3,4,6,23]
@@ -171,12 +172,10 @@ def test_semilinear_Hawkes_is_correct_when_intensity_of_A_is_constant():
             poisson_measure=poisson_B
             )
 
-        # print(eventsB)
-        # print(eventsB.size)
-        # print("ATTENTION")
+
         simulated_intensity = new_model.hawkes_intensity(t=T, history=eventsB, mu=muB, phi=phiB)
         print(simulated_intensity)
-        # print("End of ATTENTION")
+
 
         empirical_average += simulated_intensity
 

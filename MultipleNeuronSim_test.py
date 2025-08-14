@@ -3,7 +3,7 @@ import new_model
 import basicfunctions
 
 def test_intensity_linear():
-
+    #todo must be more trustworthy and have less out-of-the-blue constants
     poisson_measure = {"time" : [2.5,3.8],
                        "theta" : [12., 23.],
                        "T": 4,
