@@ -131,7 +131,7 @@ class NeuronLinear():
         :return: Array representing the values of the intensity as time progresses up to self.T
         """
 
-        time_scale = np.linspace(0, self.T, T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
+        time_scale = np.linspace(0, self.T, self.T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
 
         intensity_values = new_model_fast.hawkes_intensity_fast_array(time_scale_array=time_scale,
                                                             history=self.history, mu=self.initial_intensity,
@@ -171,6 +171,13 @@ class NeuronLinear():
         """
         means, time_scale = NeuronLinear.array_mean_of_intensities()
         plt.plot( time_scale, means, label="Intensity of the mean of all linear neurons")
+
+    @staticmethod
+    def reinitialise():
+        NeuronLinear.number_instances_linear = 0
+        NeuronLinear.list_linear_neurons = []
+
+        #NeuronLinear.simulation_was_ran = False
 
 class NeuronSemilinear() :
 
@@ -344,6 +351,13 @@ class NeuronSemilinear() :
                  label=string + ' (rejected) ')
         plt.plot(time_scale , np.maximum(0,intensity-mean_linear) ,
                   label=" Acceptation zone ")
+
+    @staticmethod
+    def reinitialise():
+        NeuronSemilinear.number_instances_semilinear = 0
+        NeuronSemilinear.list_semilinear_neurons = []
+
+        NeuronSemilinear.simulation_was_ran = False
 
 
 

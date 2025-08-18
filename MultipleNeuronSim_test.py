@@ -1,4 +1,4 @@
-import MutipleNeuronSim as Neurons
+import MultipleNeuronSim as Neurons
 import new_model
 import basicfunctions
 
