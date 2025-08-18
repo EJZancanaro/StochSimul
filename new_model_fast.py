@@ -3,6 +3,7 @@ from types import FunctionType
 
 import numpy as np
 import new_model
+import math
 import basicfunctions
 
 
@@ -19,43 +20,54 @@ def hawkes_intensity_fast(t, history,mu,phi,previous_value_intensity=None,previo
     :return: intensity of the corresponding process at time t
     """
 
-    params = [cell.cell_contents for cell in phi.__closure__]
-    alpha = params[0]
-    beta = params[1]
+    assert is_exponential_decay
 
-    if is_exponential_decay:
-        if previous_value_intensity is None:
-            # No information about previous intensities, compute normally
-            return new_model.hawkes_intensity(t,np.array(history),mu,phi)
-        else:
-            #assert previous_time is not None
+    #todo solve the following connundrum
+    #this doesn't work when there are successive functions calls, but succeeds in the tests, including the being fast part
+    #params = [cell.cell_contents for cell in phi.__closure__]
+    #alpha = params[0]
+    #beta = params[1]
 
-            #too slow
-            history = np.array(history)
-            intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*sum(np.exp(-beta*(t-history[(history<t) & (history>previous_time) ])))
-            #intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*np.exp(-beta*(t-previous_time))
-            return intensity
+    #this does work but is extremely slow, slower than the slow versions
+    alpha = phi(0)
+    beta = math.log(alpha/phi(1)) #math is faster than numpy
 
+
+    if previous_value_intensity is None:
+        # No information about previous intensities, compute normally
+        return new_model.hawkes_intensity(t,np.array(history),mu,phi)
     else:
-        # if it's not exponential decay, we can't be faster without
-        # either having more information on the function or making taylor approximations
-        return new_model.hawkes_intensity(t,history,mu,phi)
+        #assert previous_time is not None
+
+        #too slow
+        history = np.asarray(history)
+        intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*sum(np.exp(-beta*(t-history[(history<t) & (history>previous_time) ])))
+        #intensity = mu + np.exp(-beta*(t-previous_time))*(previous_value_intensity - mu)+ alpha*np.exp(-beta*(t-previous_time))
+        return intensity
+
+    #else:
+    #    # if it's not exponential decay, we can't be faster without
+    #    # either having more information on the function or making taylor approximations
+    #    return new_model.hawkes_intensity(t,history,mu,phi)
 
 def hawkes_intensity_fast_array(time_scale_array, history,mu, phi,is_exponential_decay=False):
+    assert is_exponential_decay #otherwise just call hawkes_intensity_array. Done so to avoid overhead conditions
 
     intensity_array = np.zeros_like(time_scale_array)
     previous_value_intensity = None
     previous_time=None
-    if not is_exponential_decay :
-        return new_model.hawkes_intensity_array(time_scale_array=time_scale_array,history=history ,mu=mu, phi=phi)
-    else:
-        for (i,t) in enumerate(time_scale_array) :
-            previous_value_intensity = hawkes_intensity_fast(t=t, history=history, mu=mu, phi=phi,
-                                    previous_value_intensity=previous_value_intensity, previous_time=previous_time
-                                   ,is_exponential_decay=is_exponential_decay)
-            intensity_array[i] = previous_value_intensity
-            previous_time = t
-        return intensity_array
+
+    #this is too much overhead, given that hawkes_intensity is already gonna check multiple times if it's exponential decay
+    #if not is_exponential_decay :
+    #    return new_model.hawkes_intensity_array(time_scale_array=time_scale_array,history=history ,mu=mu, phi=phi)
+
+    for (i,t) in enumerate(time_scale_array) :
+        previous_value_intensity = hawkes_intensity_fast(t=t, history=history, mu=mu, phi=phi,
+                                previous_value_intensity=previous_value_intensity, previous_time=previous_time
+                               ,is_exponential_decay=is_exponential_decay)
+        intensity_array[i] = previous_value_intensity
+        previous_time = t
+    return intensity_array
 
 def simulate_hawkes_linear_finite2D_fast(mu, phi , poisson_measure,is_exponential_decay=False):
 

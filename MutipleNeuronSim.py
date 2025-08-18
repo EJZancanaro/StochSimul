@@ -3,6 +3,8 @@ import basicfunctions
 import numpy as np
 import matplotlib.pyplot as plt
 
+from basicfunctions import ExponentialDecay
+
 import new_model
 import new_model_fast
 NUMBER_OF_POINTS_PER_UNIT_OF_TIME = 10**3

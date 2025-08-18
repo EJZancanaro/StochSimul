@@ -39,6 +39,7 @@ def hawkes_intensity(t, history, mu, phi):
     #Attention. If a function calls this function inside a loop where history
     #is filled progressively, then that loop will run on O(len(final_history)**2) instead of
     #O(len(final_history). This should be adressed in a following update
+    history = np.asarray(history)
     if history.size == 0:
         return mu
     else:

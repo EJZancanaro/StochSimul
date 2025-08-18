@@ -122,3 +122,12 @@ def is_exponential_decay(func):
             seen_call = True
 
     return seen_call
+
+
+class ExponentialDecay():
+    def __init__(self,alpha,beta):
+        self.func = lambda x: exponential_kernel(x, alpha=alpha, beta=beta)
+        self.alpha = alpha
+        self.beta = beta
+        self.is_exponential_decay = True
+
