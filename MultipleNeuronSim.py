@@ -463,13 +463,13 @@ if __name__ == "__main__":
     A1.intensity_plot(string="Intensity of A1")
     A2.intensity_plot(string="Intensity of A2")
 
-    #B1.intensity_plot(string="Intensity of B1")
-    #B2.intensity_plot(string="Intensity of B2")
+    B1.intensity_plot(string="Intensity of B1")
+    B2.intensity_plot(string="Intensity of B2")
 
 
     NeuronLinear.plot_means()
 
-    #B1.plot_poisson_events("Poisson events of B1")
+    B1.plot_poisson_events("Poisson events of B1")
     plt.legend(fontsize="xx-small")
     plt.tight_layout()
     plt.show()
