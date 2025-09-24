@@ -103,41 +103,105 @@ def order_poisson_measure(list_poisson_measure_dicts):
 class NeuronLinear():
     number_instances_linear = 0
     list_linear_neurons = []
-    def __init__(self, initial_intensity , kernel_function, poisson_measure):
+    simulation_was_ran = False
+    def __init__(self, initial_intensity , list_parent_kernels, poisson_measure):
         self.id = NeuronLinear.number_instances_linear
         NeuronLinear.number_instances_linear+=1
         NeuronLinear.list_linear_neurons.append(self)
 
         self.initial_intensity = initial_intensity
-        self.kernel_function = kernel_function
-        self.is_exponential_decay = basicfunctions.is_exponential_decay(self.kernel_function)
+        self.array_parent_kernels = list_parent_kernels
+        self.is_exponential_decay = basicfunctions.is_exponential_decay(self.array_parent_kernels[self.id])
         self.poisson_measure = poisson_measure
 
         self.T = poisson_measure["T"]
         self.M = poisson_measure["M"]
 
-        self.history = self.events()
+        self.history = []
 
-    def events(self):
+    @staticmethod
+    def events():
+
+        assert not NeuronLinear.simulation_was_ran
+
+        all_poisson_measuresA = order_poisson_measure(
+            [neuron.poisson_measure for neuron in NeuronLinear.list_linear_neurons]
+        )
+        array_times = all_poisson_measuresA["time"]
+        array_thetas = all_poisson_measuresA["theta"]
+        array_ids = all_poisson_measuresA["id"]
+
+
+        array_current_intensities = np.zeros(NeuronLinear.number_instances_linear)
+        #array_current_events = [ [] for _ in range(NeuronSemilinear.number_instances_semilinear) ]
+        #array_current_events[i] will be the events of neuron i up to our point in simulation
+
+
+        for neuron in NeuronLinear.list_linear_neurons: #initliasing intensities
+            array_current_intensities[neuron.id] = neuron.initial_intensity
+
+
+        #assert max(array_ids)<=len(NeuronSemilinear.list_semilinear_neurons)
+        #otherwise something wrong happened
+
+        #assert array_ids!=np.zeros_like(array_ids) debugging
+        for t, theta, neuron_index in zip(array_times,array_thetas,array_ids):
+
+            current_neuron = NeuronLinear.list_linear_neurons[neuron_index]
+
+            array_current_intensities[neuron_index] = sum (
+                [ new_model.hawkes_intensity(t,
+                    #mu=current_neuron.initial_intensity,
+                    mu=0,
+                    phi=current_neuron.array_parent_kernels[id_parent_neuron],
+                    history = np.array(NeuronLinear.list_linear_neurons[id_parent_neuron].history))
+                 for id_parent_neuron in range(NeuronLinear.number_instances_linear)
+                ]
+            )
+            array_current_intensities[neuron_index] *=1/NeuronLinear.number_instances_linear
+            array_current_intensities[neuron_index] += current_neuron.initial_intensity
+
+            if theta<max(0, array_current_intensities[neuron_index]) :
+                current_neuron.history.append(t)
+
+        NeuronLinear.history_to_array()
+        NeuronLinear.simulation_was_ran=True
+
+    @staticmethod
+    def history_to_array():
         """
-        Returns the events of the neuron
-        :return: list of events
+        Turns the history of each neuron, who are lists during their construction, into arrays
         """
-        return new_model_fast.simulate_hawkes_linear_finite2D_fast(mu=self.initial_intensity, phi=self.kernel_function,
-                                                         poisson_measure=self.poisson_measure)
+        for neuron in NeuronLinear.list_linear_neurons:
+            neuron.history = np.array(neuron.history)
+
     def intensity_values(self):
         """
         Computes the intensity over time of the neuron.
         :return: Array representing the values of the intensity as time progresses up to self.T
         """
 
-        time_scale = np.linspace(0, self.T, self.T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
+        T = self.T
+        time_scale = np.linspace(0, T, T * NUMBER_OF_POINTS_PER_UNIT_OF_TIME)
+        intensity_array = np.zeros_like(time_scale)
 
-        intensity_values = new_model_fast.hawkes_intensity_fast_array(time_scale_array=time_scale,
-                                                            history=self.history, mu=self.initial_intensity,
-                                                            phi=self.kernel_function,
-                                                            is_exponential_decay=self.is_exponential_decay)
-        return intensity_values, time_scale
+        for (i, t) in enumerate(time_scale):
+            intensity_array[i] = sum(
+                [new_model.hawkes_intensity(t,
+                                            mu=0,
+                                            phi=self.array_parent_kernels[id_parent_neuron],
+                                            history=np.array(
+                                                NeuronLinear.list_linear_neurons[id_parent_neuron].history[
+                                                    NeuronLinear.list_linear_neurons[
+                                                        id_parent_neuron].history < t
+                                                    ]))
+                 for id_parent_neuron in range(NeuronLinear.number_instances_linear)
+                 ]
+            )
+            intensity_array[i] *= 1 / NeuronLinear.number_instances_linear
+            intensity_array[i] += self.initial_intensity
+
+        return intensity_array, time_scale
 
     def intensity_plot(self, string):
         """
@@ -370,20 +434,20 @@ if __name__ == "__main__":
     poisson_measureB1 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
     poisson_measureB2 = new_model.generate_Poisson_2D_finitearea(T=T,M=M)
 
-    muA1, muA2, muA3, muB1,muB2 = 5,4,3,6,7
+    muA1, muA2, muB1,muB2 = 4,5,10,12
 
-    phiA1 = lambda x: basicfunctions.exponential_kernel(x,alpha=1,beta=5)
-    phiA2 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=4)
-    phiA3 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=3)
+    phiA11 = lambda x: basicfunctions.exponential_kernel(x,alpha=5,beta=6)
+    phiA12 = lambda x: basicfunctions.exponential_kernel(x,alpha=3, beta=10)
+    phiA21 = lambda x: basicfunctions.exponential_kernel(x,alpha=2, beta=3)
+    phiA22 = lambda x: basicfunctions.exponential_kernel(x,alpha=1, beta=9)
 
-    phiB11 = lambda x: 0
+    phiB11 = lambda x: basicfunctions.exponential_kernel(x, alpha=7, beta=7)
     phiB21 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=3)
-    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=2, beta=4)
-    phiB22 = lambda x: 0
+    phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=3, beta=4)
+    phiB22 = lambda x: basicfunctions.exponential_kernel(x, alpha=8, beta=6)
 
-    A1 = NeuronLinear(initial_intensity=muA1, kernel_function=phiA1, poisson_measure=poisson_measureA1)
-    A2 = NeuronLinear(initial_intensity=muA2, kernel_function=phiA2, poisson_measure=poisson_measureA2)
-    A3 = NeuronLinear(initial_intensity=muA3, kernel_function=phiA3, poisson_measure=poisson_measureA3)
+    A1 = NeuronLinear(initial_intensity=muA1, list_parent_kernels=[phiA11,phiA21], poisson_measure=poisson_measureA1)
+    A2 = NeuronLinear(initial_intensity=muA2, list_parent_kernels=[phiA12,phiA22], poisson_measure=poisson_measureA2)
 
     parent_kernels_B1 = [phiB11,phiB21]
     parent_kernels_B2 = [phiB12,phiB22]
@@ -391,21 +455,21 @@ if __name__ == "__main__":
     B1 = NeuronSemilinear(initial_intensity=muB1, list_parent_kernels=[phiB11,phiB21], poisson_measure=poisson_measureB1)
     B2 = NeuronSemilinear(initial_intensity=muB2, list_parent_kernels=[phiB12,phiB22], poisson_measure=poisson_measureB2)
 
+    NeuronLinear.events()
     NeuronSemilinear.events()
 
     plt.figure()
 
-    #A1.intensity_plot(string="Intensity of A1")
-    #A2.intensity_plot(string="Intensity of A2")
-    #A3.intensity_plot(string="Intensity of A3")
+    A1.intensity_plot(string="Intensity of A1")
+    A2.intensity_plot(string="Intensity of A2")
 
-    B1.intensity_plot(string="Intensity of B1")
-    B2.intensity_plot(string="Intensity of B2")
+    #B1.intensity_plot(string="Intensity of B1")
+    #B2.intensity_plot(string="Intensity of B2")
 
 
     NeuronLinear.plot_means()
 
-    B1.plot_poisson_events("Poisson events of B1")
+    #B1.plot_poisson_events("Poisson events of B1")
     plt.legend(fontsize="xx-small")
     plt.tight_layout()
     plt.show()

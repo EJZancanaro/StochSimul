@@ -9,14 +9,14 @@ if __name__=="__main__" :
     T = 100
     M = 1000
 
-    MAX_MU_A = 100
-    MAX_MU_B = 100
+    MAX_MU_A = 10
+    MAX_MU_B = 10
 
-    MAX_ALPHA_A = 100
-    MAX_ALPHA_B = 100
+    MAX_ALPHA_A = 10
+    MAX_ALPHA_B = 10
 
-    MAX_BETA_A = 100
-    MAX_BETA_B = 100
+    MAX_BETA_A = 10
+    MAX_BETA_B = 10
 
     N_SIMULATIONS_MAX = 1000
 
@@ -40,7 +40,6 @@ if __name__=="__main__" :
 
 
             phiA = lambda x: basicfunctions.exponential_kernel(x, alpha=alpha_A, beta=beta_A)
-
 
             phiB11 = lambda x: basicfunctions.exponential_kernel(x, alpha=alpha_B, beta=beta_B)
 

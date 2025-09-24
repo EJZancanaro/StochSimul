@@ -24,6 +24,7 @@ def hawkes_intensity_fast(t, history,mu,phi,previous_value_intensity=None,previo
 
     #todo solve the following connundrum
     #this doesn't work when there are successive functions calls, but succeeds in the tests, including the being fast part
+
     #params = [cell.cell_contents for cell in phi.__closure__]
     #alpha = params[0]
     #beta = params[1]
