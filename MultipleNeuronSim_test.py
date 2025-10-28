@@ -9,7 +9,8 @@ def test_intensity_linear():
                        "T": 4,
                        "M":24}
     neuron = Neurons.NeuronLinear(initial_intensity=13,
-        kernel_function=lambda x : basicfunctions.exponential_kernel(x,alpha=2,beta=4),
+        list_parent_kernels=[lambda x : basicfunctions.exponential_kernel(x,alpha=2,beta=4)],
         poisson_measure=poisson_measure)
-    events = neuron.events()
-    assert events[0] == 2.5
+    neuron.events()
+    events = neuron.history
+    assert events[0] == 2.5 and len(events)==1
