@@ -18,7 +18,9 @@ At the end of the file, you can see an example of a simulation of system of neur
 You can create a neuron by either calling the NeuronLinear or NeuronSemilinear classes. *Only after creating all neurons should you call the .events() method to simulate them.* You should also call NeuronLinear.events() *before* NeuronSemilinear.events().
 Plotting of the intensity as a function of time is done by the intensity_plot() method. If you want to plot the Poisson points used to generate one of the semilinear models, you can use the plot_poisson_events() method (it is only implemented for semilinear neurons). Doing so for multiple semilinear neurons will make the plot unreadable.
 
-If you want to reinitialise the system it is mandatory to call the static methods reinitialise() for both the linear and semilinear neurons. Otherwise an assertion error will occur when calling events(). This is imperative because we use global static variables to access information of other neurons.
+Below is an example of a (heavily loaded) plot. We used the parameters present in the main of MultipleNeuronSim.py.
+![image](imageExample.png)
+If you want to reinitialise the system it is mandatory to call the static methods reinitialise() for both the linear (NeuronLinear.reinitialise())and semilinear (NeuronSemilinear.reinitialise()) neurons. Otherwise an assertion error will occur when calling events(). This is because we use global static variables to access information of other neurons, so they need to be properly reset to their original values before a second simulation is launched.
 
 
 
