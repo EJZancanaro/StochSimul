@@ -446,14 +446,17 @@ if __name__ == "__main__":
     phiB12 = lambda x: basicfunctions.exponential_kernel(x, alpha=3, beta=4)
     phiB22 = lambda x: basicfunctions.exponential_kernel(x, alpha=8, beta=6)
 
-    A1 = NeuronLinear(initial_intensity=muA1, list_parent_kernels=[phiA11,phiA21], poisson_measure=poisson_measureA1)
-    A2 = NeuronLinear(initial_intensity=muA2, list_parent_kernels=[phiA12,phiA22], poisson_measure=poisson_measureA2)
+    parent_kernels_A1 = [phiA11,phiA21]
+    parent_kernels_A2 = [phiA12,phiA22]
+
+    A1 = NeuronLinear(initial_intensity=muA1, list_parent_kernels=parent_kernels_A1, poisson_measure=poisson_measureA1)
+    A2 = NeuronLinear(initial_intensity=muA2, list_parent_kernels=parent_kernels_A2, poisson_measure=poisson_measureA2)
 
     parent_kernels_B1 = [phiB11,phiB21]
     parent_kernels_B2 = [phiB12,phiB22]
 
-    B1 = NeuronSemilinear(initial_intensity=muB1, list_parent_kernels=[phiB11,phiB21], poisson_measure=poisson_measureB1)
-    B2 = NeuronSemilinear(initial_intensity=muB2, list_parent_kernels=[phiB12,phiB22], poisson_measure=poisson_measureB2)
+    B1 = NeuronSemilinear(initial_intensity=muB1, list_parent_kernels=parent_kernels_B1, poisson_measure=poisson_measureB1)
+    B2 = NeuronSemilinear(initial_intensity=muB2, list_parent_kernels=parent_kernels_B2, poisson_measure=poisson_measureB2)
 
     NeuronLinear.events()
     NeuronSemilinear.events()
