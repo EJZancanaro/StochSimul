@@ -20,6 +20,7 @@ Plotting of the intensity as a function of time is done by the intensity_plot() 
 
 Below is an example of a (heavily loaded) plot. We used the parameters present in the main of MultipleNeuronSim.py.
 ![image](imageExample.png)
+
 If you want to reinitialise the system it is mandatory to call the static methods reinitialise() for both the linear (NeuronLinear.reinitialise())and semilinear (NeuronSemilinear.reinitialise()) neurons. Otherwise an assertion error will occur when calling events(). This is because we use global static variables to access information of other neurons, so they need to be properly reset to their original values before a second simulation is launched.
 
 
