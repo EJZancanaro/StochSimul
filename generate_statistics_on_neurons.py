@@ -43,7 +43,7 @@ if __name__=="__main__" :
 
             phiB11 = lambda x: basicfunctions.exponential_kernel(x, alpha=alpha_B, beta=beta_B)
 
-            A1 = MultipleNeuronSim.NeuronLinear(initial_intensity=muA, kernel_function=phiA, poisson_measure=poisson_measureA1)
+            A1 = MultipleNeuronSim.NeuronLinear(initial_intensity=muA, list_parent_kernels=[phiA], poisson_measure=poisson_measureA1)
 
             parent_kernels_B1 = [phiB11]
 
